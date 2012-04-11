@@ -414,6 +414,12 @@ module Squeel
             block.to_sql.should eq standard.to_sql
           end
 
+          it 'correctly interprets polymorphic comparisions' do
+            block = Note.where{ notable == Person.first }
+            block.to_sql.should match /"notes"."notable_type" = 'Person'/
+            block.to_sql.should match /"notes"."notable_id" = #{Person.first.id}/
+          end
+
           it 'builds compound conditions with a block' do
             block = Person.where{(name == 'bob') & (salary == 100000)}
             block.to_sql.should match /"people"."name" = 'bob'/

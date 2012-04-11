@@ -127,7 +127,15 @@ module Squeel
         if Array === value && [:in, :not_in].include?(o.method_name)
           o.method_name == :in ? attribute_in_array(attribute, value) : attribute_not_in_array(attribute, value)
         else
-          attribute.send(o.method_name, value)
+          # check if attribtue is polymorph
+          if !parent.is_a?(Nodes::Stub) && attribute.is_a?(Arel::Attributes::Attribute) && (names = attribute.relation.columns.collect(&:name)) &&
+            names.include?(:"#{attribute.name}_id") && names.include?(:"#{attribute.name}_type") && o.value.is_a?(ActiveRecord::Base)
+            # rewrite nodes
+            visit(Nodes::Predicate.new("#{attribute.name}_id", o.method_name, o.value.id) &
+              Nodes::Predicate.new("#{attribute.name}_type", o.method_name, o.value.class.to_s), parent)
+          else
+            attribute.send(o.method_name, value)
+          end
         end
       end
 
