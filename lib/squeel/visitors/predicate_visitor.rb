@@ -125,7 +125,13 @@ module Squeel
         end
 
         if Array === value && [:in, :not_in].include?(o.method_name)
-          o.method_name == :in ? attribute_in_array(attribute, value) : attribute_not_in_array(attribute, value)
+          if !parent.is_a?(Nodes::Stub) && attribute.is_a?(Arel::Attributes::Attribute) && (names = attribute.relation.columns.collect(&:name)) &&
+            names.include?(:"#{attribute.name}_id") && names.include?(:"#{attribute.name}_type")
+            visit(Nodes::Predicate.new("#{attribute.name}_id", o.method_name, o.value) &
+              Nodes::Predicate.new("#{attribute.name}_type", o.method_name, o.value.first.class.to_s), parent)
+          else
+            o.method_name == :in ? attribute_in_array(attribute, value) : attribute_not_in_array(attribute, value)
+          end
         else
           # check if attribtue is polymorph
           if !parent.is_a?(Nodes::Stub) && attribute.is_a?(Arel::Attributes::Attribute) && (names = attribute.relation.columns.collect(&:name)) &&

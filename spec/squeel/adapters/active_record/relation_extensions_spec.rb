@@ -419,6 +419,12 @@ module Squeel
             block.to_sql.should match /"notes"."notable_type" = 'Person'/
             block.to_sql.should match /"notes"."notable_id" = #{Person.first.id}/
           end
+          
+          it 'correctly interprets polymorphic inclusion' do
+            block = Note.where{notable >> [Person.first, Person.last]}
+            block.to_sql.should match /"notes"."notable_type" IN \('Person'\)/
+            block.to_sql.should match /"notes"."notable_id" IN \(#{Person.first.id}, #{Person.last.id}\)/
+          end
 
           it 'builds compound conditions with a block' do
             block = Person.where{(name == 'bob') & (salary == 100000)}
